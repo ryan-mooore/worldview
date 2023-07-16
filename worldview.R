@@ -1,32 +1,63 @@
-ZOOM <- 12
+ZOOM <- 10
 TILESERVER <- "https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}"
-SIZE <- list(x=5, y=3)
-COUNTRY <- "New Zealand"
+SIZE <- list(x=6, y=6)
+COUNTRY <- "New Zealnd"
 
-library(rnaturalearth)
+# main libraries
 library(sf)
+library(lwgeom) # required by sf
+library(terra)
+
+# helper libraries
 library(slippymath)
 library(stringr)
-library(terra)
-library(lwgeom) # required by sf
 
-countries <- ne_countries()
+# other libraries
+library(tidygeocoder)
+library(rnaturalearth)
 
-if (COUNTRY %in% countries@data$name_long) {
+if (COUNTRY %in% rnaturalearth::ne_countries()@data$name_long) {
   print(paste("Getting random location in", COUNTRY))
-  land <- ne_countries(country=COUNTRY, type="countries", returnclass = "sf") |>
+  land <- rnaturalearth::ne_countries(
+    country=COUNTRY,
+    type="countries",
+    returnclass = "sf") |>
     st_geometry()
 } else {
   print("Getting random location in the World")
-  land <- ne_download(scale=110, type="land", category = "physical", returnclass = "sf")
+  ne_options <- list(
+    scale=110,
+    type="land",
+    destdir=tempdir(),
+    category = "physical",
+    returnclass = "sf"
+  )
+  land <- tryCatch(
+    do.call(rnaturalearth::ne_load, ne_options),
+    error=function() do.call(rnaturalearth::ne_download, ne_options)
+  )
 }
+
 point <- st_sample(land |> st_make_valid(), size=1)
 coords <- point |> st_coordinates()
-origin <- lonlat_to_tilenum(lon=coords[[1]], lat=coords[[2]], zoom=ZOOM)
+origin <- slippymath::lonlat_to_tilenum(
+  lon=coords[,"X"],
+  lat=coords[,"Y"],
+  zoom=ZOOM
+)
+
+location <- tidygeocoder::reverse_geo(
+  long=coords[,"X"],
+  lat=coords[,"Y"],
+  progress_bar=F,
+  quiet=T,
+  custom_query = list(zoom=ZOOM))
 
 print("Downloading reference tile")
-tile_ext <- str_interp(TILESERVER, list(x=origin$x, y=origin$y, z=ZOOM)) |> 
-  rast() |> ext()
+tile_ext <- stringr::str_interp(
+  TILESERVER, 
+  list(x=origin$x, y=origin$y, z=ZOOM)
+  ) |> rast() |> ext()
 
 # create coordinate reference matrices
 x <- rep(origin$x + 1:SIZE$x, SIZE$y) |>
@@ -48,7 +79,7 @@ tiles <- mapply(function(x, y) {
     )
   tile
   }, x, y)
-s
+
 print("Merging image tiles")
 image <- sprc(tiles) |> merge()
-plot(image)
+plot(image, main=location$address)

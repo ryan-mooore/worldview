@@ -1,2 +1,5 @@
 .Rprofile
 renv
+
+*.Rproj
+.Rproj.user
