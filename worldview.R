@@ -1,9 +1,9 @@
-ZOOM <- c(5, 12)
+ZOOM <- c(8, 12)
 TILESERVER <- "https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}"
-# SIZE <- c(X=1920, Y=1080)
-SIZE <- c(X=256, Y=256)
-DOWNSAMPLE <- 0
+SIZE <- c(X=3840, Y=2160)
+DOWNSAMPLE <- 1
 COUNTRY <- ""
+OUTPUT_LOCATION <- "~/worldview.jpg"
 
 # main libraries
 library(sf)
@@ -105,4 +105,5 @@ image <- image |> crop(ext(
   ext(image)$ymin + SIZE["Y"]
 ))
 
-plot(image, main=location$address)
+# plot(image, main=location$address)
+writeRaster(image, OUTPUT_LOCATION, filetype="JPEG", overwrite=TRUE)
