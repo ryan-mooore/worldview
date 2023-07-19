@@ -1,8 +1,9 @@
-ZOOM <- 11
+ZOOM <- c(5, 12)
 TILESERVER <- "https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}"
-SIZE <- c(X=1920, Y=1080)
+# SIZE <- c(X=1920, Y=1080)
+SIZE <- c(X=256, Y=256)
 DOWNSAMPLE <- 0
-COUNTRY <- "New Zealand"
+COUNTRY <- ""
 
 # main libraries
 library(sf)
@@ -39,13 +40,13 @@ if (COUNTRY %in% rnaturalearth::ne_countries()@data$name_long) {
   )
 }
 
+# choose random zoom level
+if (length(ZOOM) == 2) {
+  ZOOM <- sample(ZOOM[1]:ZOOM[2], 1)
+}
+
 point <- st_sample(land |> st_make_valid(), size=1)
 coords <- point |> st_coordinates()
-origin <- slippymath::lonlat_to_tilenum(
-  lon=coords[,"X"],
-  lat=coords[,"Y"],
-  zoom=ZOOM + DOWNSAMPLE
-)
 
 location <- tidygeocoder::reverse_geo(
   long=coords[,"X"],
@@ -54,14 +55,25 @@ location <- tidygeocoder::reverse_geo(
   quiet=T,
   custom_query = list(zoom=ZOOM))
 
+origin <- slippymath::lonlat_to_tilenum(
+  lon=coords[,"X"],
+  lat=coords[,"Y"],
+  zoom=ZOOM + DOWNSAMPLE
+)
+
+num_tiles <- 2 ^ DOWNSAMPLE * ceiling(SIZE / 256)
+
+# set origin to center of image
+origin$x <- origin$x - num_tiles["X"] %/% 2
+origin$y <- origin$y - num_tiles["Y"] %/% 2
+
 print("Downloading reference tile")
 tile_ext <- stringr::str_interp(
-  TILESERVER, 
+  TILESERVER,
   list(x=origin$x, y=origin$y, z=ZOOM + DOWNSAMPLE)
   ) |> rast() |> ext()
 
 # create coordinate reference matrices
-num_tiles <- 2 ^ DOWNSAMPLE * ceiling(SIZE / 256)
 x <- rep(origin$x + 1:num_tiles["X"], num_tiles["Y"]) |>
   matrix(nrow=num_tiles["Y"], ncol=num_tiles["X"], byrow=T)
 y <- rep(origin$y + 1:num_tiles["Y"], num_tiles["X"]) |>
