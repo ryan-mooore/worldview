@@ -1,7 +1,7 @@
 ZOOM <- 10
 TILESERVER <- "https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}"
-SIZE <- c(X=4, Y=4)
-DOWNSAMPLE <- 1
+SIZE <- c(X=1920, Y=1080)
+DOWNSAMPLE <- 0
 COUNTRY <- "New Zealnd"
 
 # main libraries
@@ -17,30 +17,30 @@ library(stringr)
 library(tidygeocoder)
 library(rnaturalearth)
 
-# if (COUNTRY %in% rnaturalearth::ne_countries()@data$name_long) {
-#   print(paste("Getting random location in", COUNTRY))
-#   land <- rnaturalearth::ne_countries(
-#     country=COUNTRY,
-#     type="countries",
-#     returnclass = "sf"
-#   ) |> st_geometry()
-# } else {
-#   print("Getting random location in the World")
-#   ne_options <- list(
-#     scale=110,
-#     type="land",
-#     destdir=tempdir(),
-#     category = "physical",
-#     returnclass = "sf"
-#   )
-#   land <- tryCatch(
-#     do.call(rnaturalearth::ne_load, ne_options),
-#     error=function(e) do.call(rnaturalearth::ne_download, ne_options)
-#   )
-# }
-# 
-# point <- st_sample(land |> st_make_valid(), size=1)
-# coords <- point |> st_coordinates()
+if (COUNTRY %in% rnaturalearth::ne_countries()@data$name_long) {
+  print(paste("Getting random location in", COUNTRY))
+  land <- rnaturalearth::ne_countries(
+    country=COUNTRY,
+    type="countries",
+    returnclass = "sf"
+  ) |> st_geometry()
+} else {
+  print("Getting random location in the World")
+  ne_options <- list(
+    scale=110,
+    type="land",
+    destdir=tempdir(),
+    category = "physical",
+    returnclass = "sf"
+  )
+  land <- tryCatch(
+    do.call(rnaturalearth::ne_load, ne_options),
+    error=function(e) do.call(rnaturalearth::ne_download, ne_options)
+  )
+}
+
+point <- st_sample(land |> st_make_valid(), size=1)
+coords <- point |> st_coordinates()
 origin <- slippymath::lonlat_to_tilenum(
   lon=coords[,"X"],
   lat=coords[,"Y"],
@@ -61,11 +61,11 @@ tile_ext <- stringr::str_interp(
   ) |> rast() |> ext()
 
 # create coordinate reference matrices
-SIZE <- 2 ^ (SIZE + DOWNSAMPLE - 1)
-x <- rep(origin$x + 1:SIZE["X"], SIZE["Y"]) |>
-  matrix(nrow=SIZE["Y"], ncol=SIZE["X"], byrow=T)
-y <- rep(origin$y + 1:SIZE["Y"], SIZE["X"]) |>
-  matrix(nrow=SIZE["Y"], ncol=SIZE["X"])
+num_tiles <- 2 ^ DOWNSAMPLE * ceiling(SIZE / 256)
+x <- rep(origin$x + 1:num_tiles["X"], num_tiles["Y"]) |>
+  matrix(nrow=num_tiles["Y"], ncol=num_tiles["X"], byrow=T)
+y <- rep(origin$y + 1:num_tiles["Y"], num_tiles["X"]) |>
+  matrix(nrow=num_tiles["Y"], ncol=num_tiles["X"])
 relx <- (x - origin$x - 1) * tile_ext$xmax
 rely <- (origin$y - y - 1) * tile_ext$ymax # fixes y inversion
 
@@ -86,4 +86,11 @@ tiles <- mapply(function(x, y) {
 
 print("Merging image tiles")
 image <- sprc(tiles) |> merge()
+image <- image |> crop(ext(
+  ext(image)$xmin, 
+  ext(image)$xmin + SIZE["X"],
+  ext(image)$ymin,
+  ext(image)$ymin + SIZE["Y"]
+))
+
 plot(image, main=location$address)
