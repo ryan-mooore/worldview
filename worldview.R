@@ -1,8 +1,8 @@
-ZOOM <- 10
+ZOOM <- 11
 TILESERVER <- "https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}"
 SIZE <- c(X=1920, Y=1080)
 DOWNSAMPLE <- 0
-COUNTRY <- "New Zealnd"
+COUNTRY <- "New Zealand"
 
 # main libraries
 library(sf)
