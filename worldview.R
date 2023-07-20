@@ -9,7 +9,7 @@ DOWNSAMPLE <- 0
 
 WRITE_IMAGE <- TRUE
 WRITE_LOCATION <- TRUE
-OUTPUT_DIR <- "~"
+DOWNSAMPLE <- 0
 FILENAME <- "worldview"
 PLOT <- FALSE
 
@@ -89,10 +89,10 @@ y <- rep(origin$y + 1:num_tiles["Y"], num_tiles["X"]) |>
 relx <- (x - origin$x - 1) * ext(ref_tile)$xmax
 rely <- (origin$y - y - 1) * ext(ref_tile)$ymax # fixes y inversion
 
-print("Downloading image tiles")
 tiles <- mapply(function(x, y) {
-  tile <- tryCatch(
-    str_interp(TILESERVER, list(x=x, y=y, z=ZOOM + DOWNSAMPLE)) |> rast(),
+  url <- str_interp(TILESERVER, list(x=x, y=y, z=ZOOM + DOWNSAMPLE))
+  print(paste("Downloading", url))
+  tile <- tryCatch(url |> rast(),
     error=function(e) setValues(ref_tile, NA))
   tilecoords <- matrix(ncol = 2, byrow = TRUE, c(y - origin$y, x - origin$x))
   ext(tile) <- c(
