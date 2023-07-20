@@ -1,9 +1,17 @@
+#!/usr/bin/env Rscript
+
 TILESERVER <- "https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}"
-ZOOM <- c(8, 14)
-SIZE <- c(X=1920, Y=1080)
-DOWNSAMPLE <- 1
 COUNTRY <- ""
-OUTPUT_LOCATION <- "~/worldview.jpg"
+ZOOM <- c(8, 14)
+
+SIZE <- c(X=2560, Y=1600)
+DOWNSAMPLE <- 0
+
+OUTPUT_DIR <- "~"
+FILENAME <- "worldview"
+PLOT <- FALSE
+WRITE_IMAGE <- TRUE
+WRITE_LOCATION <- TRUE
 
 # main libraries
 library(sf)
@@ -105,5 +113,14 @@ image <- image |> crop(ext(
   ext(image)$ymin + SIZE["Y"]
 ))
 
-# plot(image, main=location$address)
-writeRaster(image, OUTPUT_LOCATION, filetype="JPEG", overwrite=TRUE)
+if (PLOT) plot(image, main=location$address)
+if (WRITE_IMAGE) writeRaster(
+  image,
+  paste0(file.path(OUTPUT_DIR, FILENAME), ".jpg"),
+  filetype="JPEG",
+  overwrite=TRUE
+)
+if (WRITE_LOCATION) writeLines(
+  location$address,
+  paste0(file.path(OUTPUT_DIR, FILENAME), ".txt")
+)
