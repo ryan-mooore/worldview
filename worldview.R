@@ -7,11 +7,11 @@ ZOOM <- c(8, 14)
 SIZE <- c(X=2560, Y=1600)
 DOWNSAMPLE <- 0
 
+WRITE_IMAGE <- TRUE
+WRITE_LOCATION <- TRUE
 OUTPUT_DIR <- "~"
 FILENAME <- "worldview"
 PLOT <- FALSE
-WRITE_IMAGE <- TRUE
-WRITE_LOCATION <- TRUE
 
 # main libraries
 library(sf)
