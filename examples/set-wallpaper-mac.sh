@@ -6,6 +6,6 @@ magick convert "$HOME/worldview.jpg" \
     -fill "#ffffff" \
     -gravity "southwest" \
     -annotate +80+80 \
-    "$(cat $HOME/worldview.txt)" "$HOME/worldview.jpg"
+    "$(cat $HOME/worldview.txt)" "$HOME/annotated.jpg"
 osascript -e "tell application \"Finder\" to set desktop picture to POSIX file \"$HOME/annotated.jpg\""
 killall Dock
