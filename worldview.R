@@ -76,31 +76,32 @@ origin$x <- origin$x - num_tiles["X"] %/% 2
 origin$y <- origin$y - num_tiles["Y"] %/% 2
 
 print("Downloading reference tile")
-tile_ext <- stringr::str_interp(
+ref_tile <- stringr::str_interp(
   TILESERVER,
   list(x=origin$x, y=origin$y, z=ZOOM + DOWNSAMPLE)
-  ) |> rast() |> ext()
+  ) |> rast()
 
 # create coordinate reference matrices
 x <- rep(origin$x + 1:num_tiles["X"], num_tiles["Y"]) |>
   matrix(nrow=num_tiles["Y"], ncol=num_tiles["X"], byrow=T)
 y <- rep(origin$y + 1:num_tiles["Y"], num_tiles["X"]) |>
   matrix(nrow=num_tiles["Y"], ncol=num_tiles["X"])
-relx <- (x - origin$x - 1) * tile_ext$xmax
-rely <- (origin$y - y - 1) * tile_ext$ymax # fixes y inversion
+relx <- (x - origin$x - 1) * ext(ref_tile)$xmax
+rely <- (origin$y - y - 1) * ext(ref_tile)$ymax # fixes y inversion
 
 print("Downloading image tiles")
 tiles <- mapply(function(x, y) {
-  tile <- str_interp(TILESERVER, list(x=x, y=y, z=ZOOM + DOWNSAMPLE)) |> rast()
+  tile <- tryCatch(
+    str_interp(TILESERVER, list(x=x, y=y, z=ZOOM + DOWNSAMPLE)) |> rast(),
+    error=function(e) setValues(ref_tile, NA))
   tilecoords <- matrix(ncol = 2, byrow = TRUE, c(y - origin$y, x - origin$x))
   ext(tile) <- c(
       xmin=relx[tilecoords],
-      xmax=(relx[tilecoords] + tile_ext$xmax),
+      xmax=(relx[tilecoords] + ext(ref_tile)$xmax),
       ymin=rely[tilecoords],
-      ymax=(rely[tilecoords] + tile_ext$ymax)
+      ymax=(rely[tilecoords] + ext(ref_tile)$ymax)
     )
   raster <- tile |> aggregate(fact=2 ^ DOWNSAMPLE)
-  RGB(raster) <- c(1, 2, 3)
   raster
   }, x, y)
 
