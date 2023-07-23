@@ -1,15 +1,15 @@
 #!/usr/bin/env Rscript
 
-TILESERVER <- "https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}"
-COUNTRY <- ""
-ZOOM <- c(8, 14)
+TILESERVER <- "https://map.cazzaserver.com/linz_topo/${z}/${x}/${y}.png"
+COUNTRY <- "New Zealand"
+ZOOM <- 13
 
 SIZE <- c(X=2560, Y=1600)
 DOWNSAMPLE <- 0
 
 WRITE_IMAGE <- TRUE
-WRITE_LOCATION <- TRUE
-DOWNSAMPLE <- 0
+WRITE_LOCATION <- FALSE
+OUTPUT_DIR <- "~"
 FILENAME <- "worldview"
 PLOT <- FALSE
 
