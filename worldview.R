@@ -12,7 +12,7 @@ DOWNSAMPLE <- 0
 WRITE_IMAGE <- TRUE
 WRITE_LOCATION <- TRUE
 WRITE_COORDINATES <- TRUE
-OUTPUT_DIR <- "."
+OUTPUT_DIR <- "~"
 FILENAME <- "worldview"
 PLOT <- FALSE
 
@@ -64,7 +64,10 @@ location <- tidygeocoder::reverse_geo(
   lat = coords[, "Y"],
   progress_bar = F,
   quiet = T,
-  custom_query = list(zoom = ZOOM)
+  custom_query = list(
+    zoom = ZOOM,
+    `accept-language` = "en"
+  )
 )
 
 origin <- slippymath::lonlat_to_tilenum(
@@ -133,12 +136,13 @@ if (WRITE_LOCATION || WRITE_COORDINATES) {
   if (WRITE_LOCATION) strings <- c(strings, location$address)
   if (WRITE_COORDINATES) {
     strings <- c(strings, paste(
-      location$lat,
-      location$long
+      sprintf(location$lat, fmt = "%#.2f"),
+      sprintf(location$long, fmt = "%#.2f")
     ))
   }
   writeLines(
     paste(strings, sep = "\n"),
-    paste0(file.path(OUTPUT_DIR, FILENAME), ".txt")
+    paste0(file.path(OUTPUT_DIR, FILENAME), ".txt"),
+    useBytes = TRUE
   )
 }
